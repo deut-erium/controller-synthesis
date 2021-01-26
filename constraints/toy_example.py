@@ -129,48 +129,57 @@ for station in stations:
             station.num_people[dest](0)>=0
         )
 
-
-for t in range(DELTA,100,DELTA):
+soft_constraints = []
+for t in range(DELTA,1000,DELTA):
     for station in stations:
         for track_no in station.track_nos:
             for (_,train_no),train in tracks[track_no].trains.items():
             # if train just arrived and waiting for people to deboard
                 # people leaving train
                 constraints.append(
-                    train.pass_dest[station.id](t) == If(And(
+                    Implies(And(
                         t>=train.starts[station.id],
                         t<train.starts[station.id]+DEBOARDING_WAIT),
-                    0,
-                    train.pass_dest[station.id](t-DELTA)
+                    train.pass_dest[station.id](t) == 0
                     )
                 )
                 # people exiting the train leaving the station
                 constraints.append(
-                    station.leaving(t+DELTA) == If(And(
+                    Implies(And(
                         t>=train.starts[station.id],
                         t<train.starts[station.id]+DEBOARDING_WAIT),
-                    train.pass_dest[station.id](t),
-                    0 #not sure
+                    station.leaving(t+DELTA) == train.pass_dest[station.id](t)
                     )
                 )
                 for destination in train.pass_dest:
                     if destination!=station.id:
                         constraints.append(
-                            train.pass_dest[destination](t) == If(And(
+                            Implies(And(
                                 t>=train.starts[station.id]+DEBOARDING_WAIT,
                                 t<train.ends[station.id]),
-                            train.pass_dest[destination](t-DELTA) + station.boarded_to[destination](t),
-                            train.pass_dest[destination](t-DELTA)
+                            train.pass_dest[destination](t) == 
+                            train.pass_dest[destination](t-DELTA) + 
+                            station.boarded_to[destination](t)
                             )
                         )
                         constraints.append(
-                            station.num_people[destination](t) == If(And(
+                            Implies(And(
                                 t>=train.starts[station.id]+DEBOARDING_WAIT,
                                 t<train.ends[station.id]),
-                            station.num_people[destination](t-DELTA) - station.boarded_to[destination](t) + station.going_to[destination]() ,
-                            station.num_people[destination](t-DELTA) + station.going_to[destination]()
+                            station.num_people[destination](t) == 
+                            station.num_people[destination](t-DELTA) - 
+                            station.boarded_to[destination](t) + station.going_to[destination]()
                             )
                         )
+                        # need to fix it up so that it doesnt create clashes
+                        # constraints.append(
+                        #     Implies(Or(
+                        #         t<train.starts[station.id],
+                        #         t>train.ends[station.id]),
+                        #     station.num_people[destination](t) == 
+                        #     station.num_people[destination](t-DELTA) + station.going_to[destination]()
+                        #     )
+                        # )
                         # the number of people entring a train for a particular station
                         # can not exceed the number of people for that dest on the station
                         constraints.append(
@@ -193,8 +202,13 @@ for t in range(DELTA,100,DELTA):
 print("constraints created")
 s = Optimize()
 s.add(constraints)
+# maximize passenger flow?
+# for d in train.pass_dest.values():
+#     s.maximize(Sum([d(i) for i in range(0,1000,DELTA)]))
+for c in soft_constraints:
+    s.add_soft(c)
 if s.check() == sat:
     m = s.model()
 else:
-    print("MADARCHOD")
+    print("somethings wrong bruh")
 
