@@ -1,0 +1,32 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+DEBOARDING_WAIT	toy_example.py	/^DEBOARDING_WAIT = 100 #seconds$/;"	v
+INTER_TRAIN_TIME	toy_example.py	/^INTER_TRAIN_TIME = 30 #seconds$/;"	v
+MAX_SPEED	toy_example.py	/^MAX_SPEED = 8 #m\/s$/;"	v
+MIN_WAIT	toy_example.py	/^MIN_WAIT = 200 #seconds$/;"	v
+MU	toy_example.py	/^MU,SIG = 20,5$/;"	v
+NUM_TRAINS	toy_example.py	/^NUM_TRAINS = 2$/;"	v
+SIG	toy_example.py	/^MU,SIG = 20,5$/;"	v
+STATIONS	toy_example.py	/^STATIONS = ['a','b','c','d']$/;"	v
+Station	toy_example.py	/^class Station:$/;"	c
+TRACKS	toy_example.py	/^TRACKS = [['a','b','c','d'],['d','c','b','a']]$/;"	v
+TRAIN_CAP	toy_example.py	/^TRAIN_CAP = 100$/;"	v
+Track	toy_example.py	/^class Track:$/;"	c
+Train	toy_example.py	/^class Train:$/;"	c
+__init__	toy_example.py	/^    def __init__(self, track_no, num_trains):$/;"	m	class:Track
+__init__	toy_example.py	/^    def __init__(self,station_id):$/;"	m	class:Station
+__init__	toy_example.py	/^    def __init__(self,train_id,track_no,capacity,graph=None):$/;"	m	class:Train
+__repr__	toy_example.py	/^    def __repr__(self):$/;"	m	class:Station
+__repr__	toy_example.py	/^    def __repr__(self):$/;"	m	class:Track
+__repr__	toy_example.py	/^    def __repr__(self):$/;"	m	class:Train
+constraints	toy_example.py	/^constraints = []$/;"	v
+graph	toy_example.py	/^graph = {$/;"	v
+stations	toy_example.py	/^stations = [Station(i) for i in STATIONS]$/;"	v
+t	toy_example.py	/^t = Int('t')$/;"	v
+track_no	toy_example.py	/^            track_no = track.id$/;"	v
+tracks	toy_example.py	/^tracks = [Track(i,NUM_TRAINS) for i in range(len(TRACKS))]$/;"	v
