@@ -32,13 +32,12 @@ class Train:
         self.track_no = track_no
         self.id = train_id
         self.capacity = capacity
-        self.starts = {
-            track:Int(f'train{self.id}_track{track_no}_start_{track}')
+        self.enters = {
+            track:Int(f'train{self.id}_track{track_no}_enter_{track}')
                         for track in self.stations}
-        self.ends = {
-            track:Int(f'train{self.id}_track{track_no}_end_{track}')
+        self.exits = {
+            track:Int(f'train{self.id}_track{track_no}_exit_{track}')
                       for track in self.stations}
-        #self.occupied = Int(f'{self.id}_{track_no}_occ')
         self.occupied = Function(
             f'train{self.id}_track{track_no}_occ',IntSort(),IntSort())
         self.pass_dest = {
@@ -91,38 +90,37 @@ tracks = [Track(i,NUM_TRAINS) for i in range(len(TRACKS))]
 constraints = []
 for track in tracks:
     for (track_no,train_no),train in track.trains.items():
-        for station in track.stations: #minimum wait time
+        # train should wait for atleast MIN_WAIT time at each station
+        for station in track.stations: 
             constraints.append(
-                train.ends[station]-train.starts[station]>=MIN_WAIT
+                train.exits[station]-train.enters[station]>=MIN_WAIT
             )
-        # it should begin positive
-        constraints.append(train.starts[track.stations[0]]>=0)
+        # the time at which train enters a station should be positive
+        constraints.append(train.enters[track.stations[0]]>=0)
         for s1,s2 in zip(track.stations,track.stations[1:]):
-            # train leaving a station in track 
-            # arrives later at the oter station on the track
+            # train exits a station in track 
+            # enters later at the other station on the track
             # by atleast max speed * distance
             constraints.append(
-                train.starts[s2]-train.ends[s1]>=(graph[s1][s2])//MAX_SPEED
+                train.enters[s2]-train.exits[s1]>=(graph[s1][s2])//MAX_SPEED
             )
-        # train occupancy should be non-neg and should not exceed capacity
-        # temporal property
-        #constraints.append(train.occupied<=TRAIN_CAP)
-        #constraints.append(train.occupied>=0)
-    # next train starts atleast after first train leaves the station
+    # next train enters atleast after first train exits the station
     for train_no in range(track.num_trains-1):
         for station in track.stations:
             track_no = track.id
             constraints.append(
-                track.trains[(track_no,train_no+1)].starts[station] > 
-                track.trains[(track_no,train_no)].ends[station] + 
+                track.trains[(track_no,train_no+1)].enters[station] > 
+                track.trains[(track_no,train_no)].exits[station] + 
                 INTER_TRAIN_TIME
             )
+    # all trains empty at t=0
     for (track_no,train_no),train in track.trains.items():
         for station in track.stations:
             constraints.append(
                 train.pass_dest[station](0)==0
             )
 
+# all station should have non negative number of people at t=0
 for station in stations:
     for dest in station.stations_to:
         constraints.append(
@@ -130,65 +128,84 @@ for station in stations:
         )
 
 soft_constraints = []
+# t in durations of DELTA
 for t in range(DELTA,1000,DELTA):
     for station in stations:
+        # if no train currently at the station, the number of people at each station
+        # would 
+        # need to fix it up so that it doesnt create clashes
+        for destination in station.stations_to:
+            no_train_time = []
+            for track_no in station.track_nos:
+                for train in tracks[track_no].trains.values():
+                    no_train_time.append(Or(t<train.enters[station.id],t>train.exits[station.id]))
+            constraints.append(
+                Implies(
+                    And(*no_train_time),
+                station.num_people[destination](t) == station.num_people[destination](t-DELTA) + station.going_to[destination]())
+            )
+            # number of people boarded from a station should be zero in this time
+            constraints.append(
+                Implies(
+                    And(*no_train_time),
+                station.boarded_to[destination](t) == 0)
+            )
         for track_no in station.track_nos:
             for (_,train_no),train in tracks[track_no].trains.items():
             # if train just arrived and waiting for people to deboard
-                # people leaving train
+            # people leaving train
                 constraints.append(
                     Implies(And(
-                        t>=train.starts[station.id],
-                        t<train.starts[station.id]+DEBOARDING_WAIT),
+                        t>=train.enters[station.id],
+                        t<train.enters[station.id]+DEBOARDING_WAIT),
                     train.pass_dest[station.id](t) == 0
                     )
                 )
-                # people exiting the train leaving the station
+                # people exiting the train leaving the station after 
+                # deboarding wait
                 constraints.append(
                     Implies(And(
-                        t>=train.starts[station.id],
-                        t<train.starts[station.id]+DEBOARDING_WAIT),
+                        t>=train.enters[station.id],
+                        t<train.enters[station.id]+DEBOARDING_WAIT),
                     station.leaving(t+DELTA) == train.pass_dest[station.id](t)
                     )
                 )
+                # after deboarding wait, the number of people going to some
+                # destination at time t entering the train from station
                 for destination in train.pass_dest:
                     if destination!=station.id:
                         constraints.append(
                             Implies(And(
-                                t>=train.starts[station.id]+DEBOARDING_WAIT,
-                                t<train.ends[station.id]),
+                                t>=train.enters[station.id]+DEBOARDING_WAIT,
+                                t<train.exits[station.id]),
                             train.pass_dest[destination](t) == 
                             train.pass_dest[destination](t-DELTA) + 
                             station.boarded_to[destination](t)
                             )
                         )
+                        # after deboarding wait, the number of people at that station
+                        # for other stations which could enter the train and some people
+                        # enter the station
                         constraints.append(
                             Implies(And(
-                                t>=train.starts[station.id]+DEBOARDING_WAIT,
-                                t<train.ends[station.id]),
+                                t>=train.enters[station.id]+DEBOARDING_WAIT,
+                                t<train.exits[station.id]),
                             station.num_people[destination](t) == 
                             station.num_people[destination](t-DELTA) - 
                             station.boarded_to[destination](t) + station.going_to[destination]()
                             )
                         )
-                        # need to fix it up so that it doesnt create clashes
-                        # constraints.append(
-                        #     Implies(Or(
-                        #         t<train.starts[station.id],
-                        #         t>train.ends[station.id]),
-                        #     station.num_people[destination](t) == 
-                        #     station.num_people[destination](t-DELTA) + station.going_to[destination]()
-                        #     )
-                        # )
                         # the number of people entring a train for a particular station
                         # can not exceed the number of people for that dest on the station
                         constraints.append(
                             station.boarded_to[destination](t)<=station.num_people[destination](t-DELTA)
                         )
+                        # the number of people in a train for a given destination
+                        # at any time should be non-negative
                         constraints.append(
                             train.pass_dest[destination](t)>=0
                         )
-                        # can not be negative
+                        # number of people boarded to a train can not be negative
                         constraints.append(
                             station.boarded_to[destination](t)>=0
                         )
@@ -203,8 +220,9 @@ print("constraints created")
 s = Optimize()
 s.add(constraints)
 # maximize passenger flow?
-# for d in train.pass_dest.values():
-#     s.maximize(Sum([d(i) for i in range(0,1000,DELTA)]))
+for station in stations:
+    for d in station.boarded_to.values():
+        s.maximize(Sum([d(i) for i in range(0,1000,DELTA)]))
 for c in soft_constraints:
     s.add_soft(c)
 if s.check() == sat:
