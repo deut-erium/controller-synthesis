@@ -8,6 +8,29 @@
     - Build an automaton for constraints and use this for deriving metrics - II
     - 
 
+## Models
+
+- Model 1
+
+  Cases:
+  1. Train is in radius of station
+  2. Train is at station
+  3. Train is inbetween stations
+
+  ### Train
+  - Case 2 per time delta produce actions, num people in station, train capacity(intrinsic) - Reward function
+  - Case 1 speed, and information from station (num people in station) - Reward function
+  - Case 3 speed, distance from the upcoming station
+
+  - Action space -> speed, information from station(num_people, num_trains arriving to the station),
+
+  - Observation space -> num people in the train, train capacity, information of the station it is going towards
+
+  - Transition Function -> path that should be followed by the trains + change in speed
+
+  - Input: 
+  - Output: Speed
+
 ## To-Do
   - Modelling (By Sunday Evening)
     - Train Identifier
@@ -26,3 +49,6 @@
   - Constraints (By Saturday evening)
     - Representation
     - Metrics
+
+
+
