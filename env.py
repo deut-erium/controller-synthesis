@@ -1,14 +1,33 @@
 import gym
 import ray
 from ray.rllib.agents import ppo
-
+import random
 from gym.spaces import Discrete, Box, Tuple
+
+class Station:
+    def __init__(self, id,max_people):
+        self.id = id
+        self.max_people = max_people
+
+
+
+# paths of each train (next_station,distance tuples)
+# initialized by the topology of the railway network
+PATHS = [[(0,10),(1,20),(2,20),(3,40)],[(0,10),(1,20),(2,20),(3,40)]] 
+
+STATIONS = [Station(i) for i in range(4)]
 
 def path(stationID, trainID):
     # return next_stationID, distance
-    raise NotImplementedError
+    return PATHS[trainID][stationID+1] 
 
 def sampler(stationID, trainID, max_people, occupancy):
+    while True:
+        transfer = int(abs(random.normalvariate(max_people/2,max_people/2)))
+        if transer < max_people:
+            break
+    STATIONS[stationID].max_people = max_people - transfer
+    return occupancy+transfer, max_people-transfer
     # return updated_occupancy, max_people
     raise NotImplementedError
 
@@ -42,7 +61,7 @@ class Controller(gym.Env):
 
     def reset(self):
         self.curr_station = 0
-        self.curr_state = (0,50,0,0)
+        self.curr_state = (0,50,0,0) #stationid, num_people_at_station,train_occupancy,distance_from_next_station
         return self.curr_state
 
     def step(self, action):
