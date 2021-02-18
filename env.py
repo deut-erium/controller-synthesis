@@ -78,6 +78,7 @@ class Controller(gym.Env):
 
     def step(self, action):
         state = list(self.curr_state)
+        print(action)
         # action is current speed
         if action == 0:
             # distance from current station = state[-1]
@@ -98,6 +99,6 @@ class Controller(gym.Env):
                 next_state = [state[0], state[1], state[2], state[3]- self.DELTA_TIME*action]
 
         done = 0
-
         reward = calcReward(next_state[0], self.TRAIN_ID, next_state[2], action,next_state[1])
+        print(reward,next_state)
         return tuple(next_state), reward, done, {}
