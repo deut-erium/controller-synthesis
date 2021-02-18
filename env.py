@@ -5,20 +5,32 @@ import random
 from gym.spaces import Discrete, Box, Tuple
 
 class Station:
-    def __init__(self, id,max_people):
+    def __init__(self, id,max_people=100,comm_radius=100):
         self.id = id
         self.max_people = max_people
+        self.trains_approaching = {} #train_id:distance,speed
+        self.comm_radius = comm_radius
+
+    def get_distance(self,train_id,dist,speed):
+        if dist<self.comm_radius:
+            self.trains_approaching[train_id]=(dist,speed)
+        return self.train_approaching
 
 
 
 # paths of each train (next_station,distance tuples)
 # initialized by the topology of the railway network
-PATHS = [[(0,10),(1,20),(2,20),(3,40)],[(0,10),(1,20),(2,20),(3,40)]] 
+PATHS = [
+    [(0,10),(1,20),(2,20),(3,40)], 
+    [(0,10),(1,20),(2,20),(3,40)]
+] # paths[i] -> path_of_train[i]
+# paths[i][j=current station] = next station, distance
 
 STATIONS = [Station(i) for i in range(4)]
 
 def path(stationID, trainID):
     # return next_stationID, distance
+    del STATIONS[stationID].trains_approaching[trainID]
     return PATHS[trainID][stationID+1] 
 
 def sampler(stationID, trainID, max_people, occupancy):
@@ -29,18 +41,18 @@ def sampler(stationID, trainID, max_people, occupancy):
     STATIONS[stationID].max_people = max_people - transfer
     return occupancy+transfer, max_people-transfer
     # return updated_occupancy, max_people
-    raise NotImplementedError
 
-
-def calcReward(stationID, trainID, occupancy, speed):
-    # return reward
-    raise NotImplementedError
+def calcReward(stationID, trainID, occupancy, speed,dist):
+    # later calculated and generated using the automata
+    # f(speed,dist, num_trains_approaching, occupancy
+    status = STATIONS[stationID].get_distance(trainID,dist,speed)
+    own_dist, own_speed = status[trainID]
+    return (own_speed/own_dist)*(len(status)-1)
 
 class Controller(gym.Env):
     """
     Action space -> variables that can be controlled and here it is only speed
-    Observation space -> (station_to, train_id, num_people_at station, occupancy, distance)
-    
+    Observation space -> (station_to, train_id, num_people_at station, occupancy, distance)    
     """
 
     def __init__(self, path, train_id, num_stations=4, max_speed=100, max_people=500, max_distance=100):
@@ -66,7 +78,9 @@ class Controller(gym.Env):
 
     def step(self, action):
         state = list(self.curr_state)
+        # action is current speed
         if action == 0:
+            # distance from current station = state[-1]
             if state[-1] == 0:
                 # currently at a station
                 next_station, distance = path(state[0], self.TRAIN_ID)
@@ -85,6 +99,5 @@ class Controller(gym.Env):
 
         done = 0
 
-        reward = calcReward(next_state[0], self.TRAIN_ID, next_state[2], action)
-
+        reward = calcReward(next_state[0], self.TRAIN_ID, next_state[2], action,next_state[1])
         return tuple(next_state), reward, done, {}
