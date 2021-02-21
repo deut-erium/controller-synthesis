@@ -22,16 +22,23 @@
   - Case 1 speed, and information from station (num people in station) - Reward function
   - Case 3 speed, distance from the upcoming station
 
-  - Action space -> speed, information from station(num_people, num_trains arriving to the station),
+  - Action space -> speed, 
+    Extrinsic varibles - information from station(num_people, num_trains arriving to the station)
 
   - Observation space -> num people in the train, train capacity, information of the station it is going towards
 
   - Transition Function -> path that should be followed by the trains + change in speed
 
-  - Input: 
+  - Base variables: num_trains, num_stations, sampler function, distances and paths
   - Output: Speed
 
 ## To-Do
+
+  ### Station class
+    1. Keep track of num_people and update num_people entered a particular train
+    2. Keep track of num_trains coming towards the station at the moment
+    3. Keep track of distances of each train from num_trains
+
   - Modelling (By Sunday Evening)
     - Train Identifier
     - Station Identifier (Track + people)
