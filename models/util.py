@@ -27,7 +27,7 @@ def path(stationID, trainID):
 
 # paths of each train (next_station,distance tuples)
 # initialized by the topology of the railway network
-PATHS = [[(1,20),(2,20),(3,40), (4,10), (0,10)] for i in range(10)] # paths[i] -> path_of_train[i]
+PATHS = [[(1,20),(2,20),(3,40), (4,10), (0,10)] for i in range(5)] # paths[i] -> path_of_train[i]
 # paths[i][j=current station] = next station, distance
 
 STATIONS = [Station(i) for i in range(5)]
@@ -75,3 +75,11 @@ def calcReward(stationID, trainID, occupancy, speed,dist):
             reward += 1
 
     return reward
+
+def write_to(trainID, reward, state, path='log_1.txt'):
+    f = open(path, 'a+')
+    f.write(str(trainID) + '\n')
+    f.write(str(reward) + '\n')
+    f.write(str(state) + '\n')
+    f.close()
+

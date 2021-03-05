@@ -3,6 +3,7 @@ import ray
 from ray.rllib.agents import ppo
 import random
 import numpy as np
+from models.util import write_to
 from gym.spaces import Discrete, Box, Tuple
 from models.station import Station
 from models.util import path, sampler, calcReward
@@ -18,6 +19,12 @@ from models.util import path, sampler, calcReward
 action should be acceleration and speed should be kept track off
 
 '''
+
+PATHS = [[(1,20),(2,20),(3,40), (4,10), (0,10)] for i in range(5)] # paths[i] -> path_of_train[i]
+# paths[i][j=current station] = next station, distance
+
+STATIONS = [Station(i) for i in range(5)]
+
 class Controller(gym.Env):
     """
     Action space -> variables that can be controlled and here it is only speed
@@ -79,7 +86,7 @@ class Controller(gym.Env):
                 next_state = [next_station, next_max_people, occupancy, distance]
             else:
                 #Between two stations and moving
-                updated_distance = state[3]- self.DELTA_TIME*action[0]
+                updated_distance = state[3]- self.DELTA_TIME*action
 
                 if updated_distance > 0:
                     next_state = [state[0], state[1], state[2], updated_distance]
@@ -90,15 +97,17 @@ class Controller(gym.Env):
         
         rew = calcReward(int(next_state[0]), self.TRAIN_ID, next_state[2], action,next_state[1])
         self.curr_state = tuple(next_state)
-        #print(f"{rew=},{next_state=}")
+        # print(f"{rew=},{next_state=}")
+        write_to(self.TRAIN_ID, rew, next_state)
         return np.array(self.curr_state, dtype=np.float64), rew, done, {}
 
 if __name__ == "__main__":
-    env = [Controller(train_id=i) for i in range(10)]
+    env = [Controller(train_id=i) for i in range(5)]
 
-    for i in range(100):
-        for j in range(10):
+    for i in range(4320):
+        print(i)
+        for j in range(5):
             # print(f"----------------- train ID={j}")
-            env[j].reset()
+            # env[j].reset()
             env[j].step(env[j].action_space.sample()) # take a random action
-            env[j].close()
+            # env[j].close()
